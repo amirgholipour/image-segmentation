@@ -1,2 +1,2 @@
-# image-segmentation
-This repo will develop and deploy an image segmentation model using Openshift platform.
+# Red Hat OpenShift Data Science - image segmentation workshop
+
