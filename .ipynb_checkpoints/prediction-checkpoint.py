@@ -29,16 +29,42 @@ import matplotlib.gridspec as gridspec
 def load_model(path = './models/image_segmentation_model2.h5' ):
     try:
         # path = splitext(path)[0]
-        model = tf.keras.models.load_model('./models/image_segmentation_model2.h5')
+        model = tf.keras.models.load_model(path)
         print("Model Loaded successfully...")
         return model
     except Exception as e:
         print(e)
             
 # Load models
-img_seg_net_path = "./models/image_segmentation_model2.h5"
+img_seg_net_path = "./models/image_segmentation_model.h5"
 img_seg_net = load_model(img_seg_net_path)
 print("[INFO] Model loaded successfully...")
+
+#######
+def load_image(datapoint):
+  input_image = tf.image.resize(datapoint['image'], (128, 128))
+
+  input_image = normalize(input_image)
+
+  return input_image
+
+def normalize(input_imagek):
+  input_image = tf.cast(input_image, tf.float32) / 255.0
+
+  return input_image
+
+def load_image_org(datapoint):
+  input_image = tf.image.resize(datapoint['image'], (128, 128))
+  input_mask = tf.image.resize(datapoint['segmentation_mask'], (128, 128))
+
+  input_image, input_mask = normalize(input_image, input_mask)
+
+  return input_image, input_mask
+
+def normalize_org(input_image, input_mask):
+  input_image = tf.cast(input_image, tf.float32) / 255.0
+  input_mask -= 1
+  return input_image, input_mask
 ######################################################################################
 # Converts colors from BGR (as read by OpenCV) to RGB (so that we can display them), #
 # also eventually resizes the image to fit the size the model has been trained on    #
@@ -49,6 +75,7 @@ def preprocess_image(image_path,resize=False):
     img = img / 255
     if resize:
         img = cv2.resize(img, (128,128))
+    img = np.expand_dims(img, axis=0)    
     return img
 
 #########################################################################
@@ -62,8 +89,12 @@ def display(display_list):
   for i in range(len(display_list)):
     plt.subplot(1, len(display_list), i+1)
     plt.title(title[i])
-    ##plt.imshow(tf.keras.utils.array_to_img(display_list[i])) ## tensorflow 2.8
-    plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
+    print (display_list[i].shape)
+    try: 
+        plt.imshow(tf.keras.utils.array_to_img(tf.squeeze(display_list[i],axis=0))) ## tensorflow 2.8
+    except:
+        plt.imshow(tf.keras.utils.array_to_img(display_list[i])) ## tensorflow 2.8
+    #plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i]))
     plt.axis('off')
   plt.show()
 
@@ -104,10 +135,11 @@ def show_predictions_org(dataset=None, num=1):
 # Returns the image of the car (vehicle) and the Licence plate image (LpImg) #
 ##############################################################################
 def get_segmentation(image_path, Dmax=608, Dmin = 608):
-    vehicle = preprocess_image(image_path)
-    pred_mask = img_seg_net(wpod_net, vehicle, bound_dim, lp_threshold=0.5)
-    os.remove(vehicle)
-    return pred_mask
+    input_image = preprocess_image(image_path)
+    pred_mask = img_seg_net(input_image)
+    
+    show_predictions(input_image, pred_mask)
+    return create_mask(pred_mask)
 
 
 
@@ -116,6 +148,7 @@ def process_file(filename):
         pred_mask = get_segmentation(filename)
     else:
         pred_mask = 'This is not a valid image file'
+        input_image = 'none'
         print(pred_mask)
     return pred_mask
 
@@ -138,4 +171,4 @@ def predict(args_dict):
     else:
         filename = os.path.join('dataset/images', args_dict.get('data'))
         pred_mask = process_file(filename)
-    return {'pred_mask': pred_mask}
+    return {'pred_mask': pred_mask.numpy().tolist()}

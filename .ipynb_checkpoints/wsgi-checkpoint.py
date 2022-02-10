@@ -1,7 +1,7 @@
 import json
 from flask import Flask, jsonify, request
 from prediction import predict
-
+from numpy import  array
 application = Flask(__name__)
 
 
@@ -15,4 +15,4 @@ def status():
 def object_detection():
     data = request.data or '{}'
     body = json.loads(data)
-    return jsonify(predict(body))
+    return jsonify(predict(body).numpy().tolist())
