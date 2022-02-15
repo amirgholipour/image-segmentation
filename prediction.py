@@ -36,6 +36,7 @@ def load_model(path = './models/image_segmentation_model_EfficientNetV2B0.h5' ):
         print(e)
             
 # Load models
+
 img_seg_net_path = "./models/image_segmentation_model_EfficientNetV2B0.h5"
 img_seg_net = load_model(img_seg_net_path)
 print("[INFO] Model loaded successfully...")
@@ -72,6 +73,7 @@ def normalize_org(input_image, input_mask):
 def preprocess_image(image_path,resize=False):
     img = cv2.imread(image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img = img / 1.0
     ## You need to enable it for mobinenet model
     # img = img / 255
     if resize:
@@ -168,8 +170,10 @@ def process_base64_image(args_dict):
 
 def predict(args_dict):
     if args_dict.get('image') is not None:
+        print(args_dict)
         pred_mask = process_base64_image(args_dict)
     else:
         filename = os.path.join('dataset/images', args_dict.get('data'))
+        print("2" + filename)
         pred_mask = process_file(filename)
     return {'pred_mask': pred_mask.numpy().tolist()}
